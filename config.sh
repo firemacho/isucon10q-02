@@ -8,7 +8,7 @@ declare -A SERVER_SERVICES=(
 
 # 各サーバにSSHで接続する際のホスト名
 declare -A SERVER_HOSTS=(
-  ["s1"]="server1"
+  ["s1"]="s1"
 )
 # SSHのユーザ
 ssh_user=isucon
