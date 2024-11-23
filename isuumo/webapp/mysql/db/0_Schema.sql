@@ -18,7 +18,8 @@ CREATE TABLE isuumo.estate
     door_width  INTEGER             NOT NULL,
     features    VARCHAR(64)         NOT NULL,
     popularity  INTEGER             NOT NULL,
-    popularity_desc INT GENERATED ALWAYS AS (-popularity) STORED
+    popularity_desc INT GENERATED ALWAYS AS (-popularity) STORED,
+    location    POINT GENERATED ALWAYS AS (POINT(latitude, longitude)) STORED NOT NULL
 );
 
 CREATE TABLE isuumo.chair
@@ -43,3 +44,4 @@ CREATE INDEX idx_chair_price_id ON isuumo.chair(price, id);
 CREATE INDEX idx_estate_rent ON isuumo.estate(rent);
 CREATE INDEX idx_estate_popularity_desc_id ON isuumo.estate(popularity_desc, id);
 CREATE INDEX idx_chair_popularity_desc_id ON isuumo.chair(popularity_desc, id);
+CREATE SPATIAL INDEX idx_estate_location ON isuumo.estate(location);
