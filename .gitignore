@@ -7,9 +7,11 @@ local
 go
 backup
 
-webapp/*
-!webapp/go
-!webapp/sql
+isuumo/*
+!isuumo/webapp
+isuumo/webapp/*
+!isuumo/webapp/go
+!isuumo/webapp/mysql
 
 env.sh
 !s1/home/isucon/env.sh

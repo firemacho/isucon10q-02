@@ -5,9 +5,9 @@ ENV_FILE:=env.sh # DB接続情報が記されているファイル
 include $(ENV_FILE) # DB接続情報およびSERVER_ID(セットアップ時に追記)の読み込み
 
 USER:=isucon
-BIN_NAME:=isucondition # ビルドにより作成する実行ファイル名
-BUILD_DIR:=/home/isucon/webapp/go # go buildを実行するディレクトリ
-SERVICE_NAME:=isucondition.go.service
+BIN_NAME:=isuumo # ビルドにより作成する実行ファイル名
+BUILD_DIR:=/home/isucon/isuumo/webapp/go # go buildを実行するディレクトリ
+SERVICE_NAME:=isuumo.go.service
 GO_PATH:=/home/isucon/local/go/bin/go #which goの結果
 
 DB_PATH:=/etc/mysql
