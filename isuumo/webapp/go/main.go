@@ -535,7 +535,11 @@ func searchChairs(c echo.Context) error {
 
 	res.Chairs = chairs
 
-	return c.JSON(http.StatusOK, res)
+	jsonResponse, err := json.Marshal(res)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	return c.JSONBlob(http.StatusOK, jsonResponse)
 }
 
 func buyChair(c echo.Context) error {
@@ -803,7 +807,11 @@ func searchEstates(c echo.Context) error {
 
 	res.Estates = estates
 
-	return c.JSON(http.StatusOK, res)
+	jsonResponse, err := json.Marshal(res)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	return c.JSONBlob(http.StatusOK, jsonResponse)
 }
 
 func getLowPricedEstate(c echo.Context) error {
