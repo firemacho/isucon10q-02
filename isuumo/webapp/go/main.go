@@ -611,7 +611,11 @@ func getLowPricedChair(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	return c.JSON(http.StatusOK, ChairListResponse{Chairs: chairs})
+	jsonResponse, err := json.Marshal(ChairListResponse{Chairs: chairs})
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	return c.JSONBlob(http.StatusOK, jsonResponse)
 }
 
 func getEstateDetail(c echo.Context) error {
@@ -632,7 +636,11 @@ func getEstateDetail(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	return c.JSON(http.StatusOK, estate)
+	jsonResponse, err := json.Marshal(estate)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	return c.JSONBlob(http.StatusOK, jsonResponse)
 }
 
 func getRange(cond RangeCondition, rangeID string) (*Range, error) {
@@ -827,7 +835,11 @@ func getLowPricedEstate(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	return c.JSON(http.StatusOK, EstateListResponse{Estates: estates})
+	jsonResponse, err := json.Marshal(EstateListResponse{Estates: estates})
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	return c.JSONBlob(http.StatusOK, jsonResponse)
 }
 
 func searchRecommendedEstateWithChair(c echo.Context) error {
@@ -893,7 +905,11 @@ func searchEstateNazotte(c echo.Context) error {
 	re.Estates = estatesInPolygon
 	re.Count = int64(len(re.Estates))
 
-	return c.JSON(http.StatusOK, re)
+	jsonResponse, err := json.Marshal(re)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	return c.JSONBlob(http.StatusOK, jsonResponse)
 }
 
 func postEstateRequestDocument(c echo.Context) error {
