@@ -18,4 +18,4 @@ declare -A SERVER_HOSTS=(
 ssh_user=isucon
 
 # GitHubリポジトリのSSHのURL
-GITHUB_URL=""
+GITHUB_URL="git@github.com:firemacho/isucon10q-02.git"
