@@ -37,6 +37,9 @@ datadir         = /var/lib/mysql
 tmpdir          = /tmp
 lc-messages-dir = /usr/share/mysql
 skip-external-locking
+skip_name_resolve = ON #ホスト名のIPアドレス解決をしない。DNS検索が走って遅くなるのを防ぐ。localhostはダメで127.0.0.1と書かないといけなくなることに注意。
+default_storage_engine = InnoDB #5.5以降ならInnoDB
+transaction_isolation = READ-COMMITTED #トランザクション分離レベル。defaultはREPEATABLE-READ。READ-COMMITEDの場合は非再現リード（同じトランザクション中でも同じデータを読み込むたびに値が変わる）が発生する可能性あり
 #
 # Instead of skip-networking the default is now to listen only on
 # localhost which is more compatible and is not less secure.
@@ -45,15 +48,19 @@ bind-address            = 0.0.0.0
 # * Fine Tuning
 #
 key_buffer_size         = 16M
-max_allowed_packet      = 16M
+#max_allowed_packet      = 16M
 thread_stack            = 192K
-thread_cache_size       = 8
+#thread_cache_size       = 8
 # This replaces the startup script and checks MyISAM tables if needed
 # the first time they are touched
 myisam-recover-options  = BACKUP
 #max_connections        = 100
 #table_open_cache       = 64
 #thread_concurrency     = 10
+max_allowed_packet = 300M #MySQLのクライアントサーバ間の通信のパケットサイズの最大。大量のレコードをバルクインサートする際などに有効。多数のクライアントが同時に大きなパケットを送受信するとメモリが枯渇する恐れ。
+max_connections = 1000 #最大のクライアント数
+thread_cache_size = 300 #いくつの接続処理スレッドがリリースおよび再割り当てされるかわりに再使用に向けてキャッシュされるべきかを定義。同時接続数が多い場合上げておくと良い
+max_connect_errors = 10000 #何回連続して中断される接続要求を許可するか。何か問題が起きて接続に失敗していた後に、MySQLへの接続がブロックされるのを防ぐ
 #
 # * Query Cache Configuration
 #
@@ -87,11 +94,25 @@ expire_logs_days        = 10
 max_binlog_size   = 100M
 #binlog_do_db           = include_database_name
 #binlog_ignore_db       = include_database_name
+disable-log-bin = 1 # if you don't use replication。バイナリログを出力しない
+sync_binlog = 0 # for ISUCON。デフォルト値。バイナリログのディスクへの同期は非同期。バイナリログを出さないなら関係ない
+sync_relay_log = 0 # for ISUCON。リレーログをディスクに同期しない。
 #
 # * InnoDB
 #
 # InnoDB is enabled by default with a 10MB datafile in /var/lib/mysql/.
 # Read the manual for more InnoDB related options. There are many!
+innodb_buffer_pool_size = 1G #availableなメモリ（MySQLしか動いていなければサーバ全体のメモリ）の70-80%を割り当てる
+innodb_log_file_size = 512M #deprecated since 8.0.30. refer to innodb_redo_log_capacity。REDOログのサイズ。増やすことでページのフラッシュを遅らせI/O性能を向上させられる。innodb_buffer_pool_sizeの25%程度～それ以上
+innodb_flush_method = O_DIRECT_NO_FSYNC #InnoDBストレージエンジンのデータとログのフラッシュ方法を指定。データ破損のリスクは高まるが性能は高い。
+innodb_log_buffer_size = 16M #コミットされていないトランザクションのためのバッファのサイズ（バッファがいっぱいになってI/Oを引き起こすことを防ぐためデフォルトの1MBより上げる）
+innodb_doublewrite = 0 # for ISUCON。二重書き込みバッファを無効に（書き込み中に障害が発生した場合にデータ破損が発生する）。
+innodb_lock_wait_timeout = 5 #行ロックの待機時間。
+innodb_flush_log_at_trx_commit = 0 # for ISUCON。ログバッファを1秒に1回ログファイルに書き込む。デフォルトではCOMMIT時に書き込む。データ破損のリスクは高まるが性能は高い。
+innodb_flush_neighbors = 0       # SSDの場合、0（隣接するページをフラッシュしない）にしたほうが性能が良い
+innodb_read_ahead_threshold = 0  # SSDの場合、0（無効）が有力
+innodb_io_capacity = 1000 # バッファプールからディスクへの書き出し処理などのIO性能の上限。ディスクのIOPSに合わせて上げる。デフォルトはHDD用。SSDの場合は1000以上。
+innodb_buffer_pool_dump_pct = 100
 #
 # * Security Features
 #
@@ -103,4 +124,4 @@ max_binlog_size   = 100M
 # ssl-ca=/etc/mysql/cacert.pem
 # ssl-cert=/etc/mysql/server-cert.pem
 # ssl-key=/etc/mysql/server-key.pem
-max_allowed_packet = 32505856
+#max_allowed_packet = 32505856
