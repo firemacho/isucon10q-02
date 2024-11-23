@@ -213,6 +213,8 @@ func (c *SearchCache) Clear() {
 }
 // estate検索結果のキャッシュ
 var estateSearchCache = NewSearchCache()
+// chair検索結果のキャッシュ
+var chairSearchCache = NewSearchCache()
 
 func (r *RecordMapper) next() (string, error) {
 	if r.err != nil {
@@ -500,11 +502,19 @@ func postChair(c echo.Context) error {
 
 	// キャッシュのクリア
 	chairCountCache.Clear()
+	chairSearchCache.Clear()
 
 	return c.NoContent(http.StatusCreated)
 }
 
 func searchChairs(c echo.Context) error {
+
+	cacheKey := c.QueryParams().Encode()
+	// キャッシュの読み取り
+	if cachedResult, ok := chairSearchCache.Get(cacheKey); ok {
+		return c.JSONBlob(http.StatusOK, cachedResult)
+	}
+
 	conditions := make([]string, 0)
 	params := make([]interface{}, 0)
 
@@ -649,6 +659,10 @@ func searchChairs(c echo.Context) error {
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
+	// キャッシュへの保存
+	chairSearchCache.Set(cacheKey, jsonResponse)
+
 	return c.JSONBlob(http.StatusOK, jsonResponse)
 }
 
@@ -694,15 +708,18 @@ func buyChair(c echo.Context) error {
 		c.Echo().Logger.Errorf("chair stock update failed : %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
-
+	
 	err = tx.Commit()
 	if err != nil {
 		c.Echo().Logger.Errorf("transaction commit error : %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	// キャッシュのクリア
-	chairCountCache.Clear()
+	// stockが0になる場合、キャッシュをクリアする
+	if chair.Stock == 1 {
+		chairCountCache.Clear()
+		chairSearchCache.Clear()
+	}
 
 	return c.NoContent(http.StatusOK)
 }
