@@ -703,6 +703,12 @@ func buyChair(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	// stockが0になる場合、キャッシュをクリアする
+	if chair.Stock == 1 {
+		chairCountCache.Clear()
+		chairSearchCache.Clear()
+	}
+
 	_, err = tx.Exec("UPDATE chair SET stock = stock - 1 WHERE id = ?", id)
 	if err != nil {
 		c.Echo().Logger.Errorf("chair stock update failed : %v", err)
@@ -713,12 +719,6 @@ func buyChair(c echo.Context) error {
 	if err != nil {
 		c.Echo().Logger.Errorf("transaction commit error : %v", err)
 		return c.NoContent(http.StatusInternalServerError)
-	}
-
-	// stockが0になる場合、キャッシュをクリアする
-	if chair.Stock == 1 {
-		chairCountCache.Clear()
-		chairSearchCache.Clear()
 	}
 
 	return c.NoContent(http.StatusOK)
