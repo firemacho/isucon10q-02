@@ -17,7 +17,7 @@ SYSTEMD_PATH:=/etc/systemd/system
 NGINX_LOG:=/var/log/nginx/access.log
 DB_SLOW_LOG:=/var/log/mysql/mysql-slow.log
 
-WEBHOOK_URL=""
+WEBHOOK_URL="https://discord.com/api/webhooks/1309825771275030548/WtYIJLhj-cZ_kSjt8nxV9FsCrOALsFMklhXCkXMFb_lfbtiiDRk6CA1LEbLUfFgFd65-"
 
 # メインで使うコマンド ------------------------
 
