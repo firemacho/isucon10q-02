@@ -183,6 +183,35 @@ var chairCountCache = NewCountCache()
 // estate件数のキャッシュ
 var estateCountCache = NewCountCache()
 
+// 検索結果の件数をキャッシュするための仕組み
+type SearchCache struct {
+	mu    sync.RWMutex
+	items map[string][]byte
+}
+func NewSearchCache() *SearchCache {
+	return &SearchCache{
+		items: make(map[string][]byte),
+	}
+}
+func (c *SearchCache) Get(key string) ([]byte, bool) {
+	c.mu.RLock() // 読み取りロック
+	value, ok := c.items[key]
+	c.mu.RUnlock()
+	return value, ok
+}
+func (c *SearchCache) Set(key string, value []byte) {
+	c.mu.Lock() // 書き込みロック
+	c.items[key] = value
+	c.mu.Unlock()
+}
+func (c *SearchCache) Clear() {
+	c.mu.Lock()
+	c.items = make(map[string][]byte) // 空のマップに置き換え
+	c.mu.Unlock()
+}
+// estate検索結果のキャッシュ
+var estateSearchCache = NewSearchCache()
+
 func (r *RecordMapper) next() (string, error) {
 	if r.err != nil {
 		return "", r.err
@@ -758,11 +787,20 @@ func postEstate(c echo.Context) error {
 
 	// キャッシュをクリア
 	estateCountCache.Clear()
+	estateSearchCache.Clear()
 
 	return c.NoContent(http.StatusCreated)
 }
 
 func searchEstates(c echo.Context) error {
+
+	cacheKey := c.QueryParams().Encode()
+
+	// キャッシュの読み取り
+	if cachedResult, ok := estateSearchCache.Get(cacheKey); ok {
+		return c.JSONBlob(http.StatusOK, cachedResult)
+	}
+
 	conditions := make([]string, 0)
 	params := make([]interface{}, 0)
 
@@ -878,6 +916,10 @@ func searchEstates(c echo.Context) error {
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
+	// キャッシュへの保存
+	estateSearchCache.Set(cacheKey, jsonResponse)
+
 	return c.JSONBlob(http.StatusOK, jsonResponse)
 }
 
