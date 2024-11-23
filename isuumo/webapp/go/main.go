@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
@@ -28,6 +29,11 @@ var db *sqlx.DB
 var mySQLConnectionData *MySQLConnectionEnv
 var chairSearchCondition ChairSearchCondition
 var estateSearchCondition EstateSearchCondition
+
+var searchEstatesCache sync.Map // searchEstatesの結果をキャッシュする変数
+func clearsearchEstatesCache() {
+	searchEstatesCache = sync.Map{}
+}
 
 type InitializeResponse struct {
 	Language string `json:"language"`
@@ -712,6 +718,14 @@ func postEstate(c echo.Context) error {
 }
 
 func searchEstates(c echo.Context) error {
+
+	// キャッシュキーを生成
+	cacheKey := c.QueryParams().Encode()
+	// キャッシュに結果があるか確認
+	if cachedResult, ok := searchEstatesCache.Load(cacheKey); ok {
+		return c.JSONBlob(http.StatusOK, cachedResult.([]byte))
+	}
+
 	conditions := make([]string, 0)
 	params := make([]interface{}, 0)
 
@@ -819,6 +833,10 @@ func searchEstates(c echo.Context) error {
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
+	// キャッシュに保存
+	searchEstatesCache.Store(cacheKey, jsonResponse)
+
 	return c.JSONBlob(http.StatusOK, jsonResponse)
 }
 
@@ -941,6 +959,8 @@ func postEstateRequestDocument(c echo.Context) error {
 		c.Logger().Errorf("postEstateRequestDocument DB execution error : %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
+	clearsearchEstatesCache()
 
 	return c.NoContent(http.StatusOK)
 }
