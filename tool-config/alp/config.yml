@@ -6,6 +6,13 @@ output: count,5xx,method,uri,min,max,sum,avg,p99                    # string(com
 
 matching_groups:            # array
 # 上から順番に評価され、パス前半の一部でも合致したらグループになってしまうので注意
+- /api/estate/search\?
+- /api/chair/search\?
+- /api/recommended_estate/\d+
+- /api/chair/\d+
+- /api/estate/\d+
+- /api/chair/buy/\d+
+- /api/estate/req_doc/\d+
 #  - /image/[0-9]+\.(jpg|png|gif) #例1
 #  - /api/isu/[a-f0-9-]+/icon #例2:例3より上に書かないと評価されない
 #  - /api/isu/[a-f0-9-]+ #例3
