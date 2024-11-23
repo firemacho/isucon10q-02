@@ -183,7 +183,7 @@ var chairCountCache = NewCountCache()
 // estate件数のキャッシュ
 var estateCountCache = NewCountCache()
 
-// 検索結果の件数をキャッシュするための仕組み
+// レスポンスごとキャッシュするための仕組み
 type SearchCache struct {
 	mu    sync.RWMutex
 	items map[string][]byte
