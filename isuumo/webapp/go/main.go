@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
@@ -150,6 +151,37 @@ type RecordMapper struct {
 	offset int
 	err    error
 }
+
+// 検索結果の件数をキャッシュするための仕組み
+type CountCache struct {
+	mu    sync.RWMutex
+	items map[string]int // 件数をキャッシュするため map
+}
+func NewCountCache() *CountCache {
+	return &CountCache{
+		items: make(map[string]int),
+	}
+}
+func (c *CountCache) Get(key string) (int, bool) {
+	c.mu.RLock() // 読み取りロック
+	value, ok := c.items[key]
+	c.mu.RUnlock()
+	return value, ok
+}
+func (c *CountCache) Set(key string, value int) {
+	c.mu.Lock() // 書き込みロック
+	c.items[key] = value
+	c.mu.Unlock()
+}
+func (c *CountCache) Clear() {
+	c.mu.Lock()
+	c.items = make(map[string]int) // 空のマップに置き換え
+	c.mu.Unlock()
+}
+// chair件数のキャッシュ
+var chairCountCache = NewCountCache()
+// estate件数のキャッシュ
+var estateCountCache = NewCountCache()
 
 func (r *RecordMapper) next() (string, error) {
 	if r.err != nil {
@@ -399,6 +431,10 @@ func postChair(c echo.Context) error {
 		c.Logger().Errorf("failed to commit tx: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
+	// キャッシュのクリア
+	chairCountCache.Clear()
+
 	return c.NoContent(http.StatusCreated)
 }
 
@@ -516,10 +552,18 @@ func searchChairs(c echo.Context) error {
 	limitOffset := " ORDER BY popularity_desc ASC, id ASC LIMIT ? OFFSET ?"
 
 	var res ChairSearchResponse
-	err = db.Get(&res.Count, countQuery+searchCondition, params...)
-	if err != nil {
-		c.Logger().Errorf("searchChairs DB execution error : %v", err)
-		return c.NoContent(http.StatusInternalServerError)
+	if cachedCount, ok := chairCountCache.Get(searchCondition); ok {
+		// キャッシュがあれば、それを返す（ページ送りの際などはキャッシュが使えるはず）
+		res.Count = int64(cachedCount)
+	} else {
+		// キャッシュがなければDBから取得
+		err = db.Get(&res.Count, countQuery+searchCondition, params...)
+		if err != nil {
+			c.Logger().Errorf("searchChairs DB execution error : %v", err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
+		// DBから取得した件数をキャッシュに保存
+		chairCountCache.Set(searchCondition, int(res.Count))
 	}
 
 	chairs := []Chair{}
@@ -590,6 +634,9 @@ func buyChair(c echo.Context) error {
 		c.Echo().Logger.Errorf("transaction commit error : %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
+	// キャッシュのクリア
+	chairCountCache.Clear()
 
 	return c.NoContent(http.StatusOK)
 }
@@ -708,6 +755,10 @@ func postEstate(c echo.Context) error {
 		c.Logger().Errorf("failed to commit tx: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
+	// キャッシュをクリア
+	estateCountCache.Clear()
+
 	return c.NoContent(http.StatusCreated)
 }
 
@@ -796,10 +847,18 @@ func searchEstates(c echo.Context) error {
 	limitOffset := " ORDER BY popularity_desc ASC, id ASC LIMIT ? OFFSET ?"
 
 	var res EstateSearchResponse
-	err = db.Get(&res.Count, countQuery+searchCondition, params...)
-	if err != nil {
-		c.Logger().Errorf("searchEstates DB execution error : %v", err)
-		return c.NoContent(http.StatusInternalServerError)
+	if cachedCount, ok := estateCountCache.Get(searchCondition); ok {
+		// キャッシュがあれば、それを返す（ページ送りの際などはキャッシュが使えるはず）
+		res.Count = int64(cachedCount)
+	} else {
+		// キャッシュがなければDBから取得
+		err = db.Get(&res.Count, countQuery+searchCondition, params...)
+		if err != nil {
+			c.Logger().Errorf("searchEstates DB execution error : %v", err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
+		// DBから取得した件数をキャッシュに保存
+		estateCountCache.Set(searchCondition, int(res.Count))
 	}
 
 	estates := []Estate{}
