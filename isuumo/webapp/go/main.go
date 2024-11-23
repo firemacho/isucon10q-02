@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	_ "net/http/pprof"
+	// _ "net/http/pprof"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -317,9 +317,9 @@ func init() {
 }
 
 func main() {
-	go func() {
-        log.Fatal(http.ListenAndServe(":6060", nil))
-    }()
+	// go func() {
+    //     log.Fatal(http.ListenAndServe(":6060", nil))
+    // }()
 
 	// Echo instance
 	e := echo.New()
